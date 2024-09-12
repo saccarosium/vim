@@ -23,7 +23,7 @@ typedef unsigned short	short_u;
 /*
  * Position in file or buffer.
  */
-typedef struct
+typedef struct pos
 {
     linenr_T	lnum;	// line number
     colnr_T	col;	// column number
@@ -34,7 +34,7 @@ typedef struct
 /*
  * Same, but without coladd.
  */
-typedef struct
+typedef struct lpos
 {
     linenr_T	lnum;	// line number
     colnr_T	col;	// column number
@@ -82,7 +82,8 @@ typedef struct VimMenu vimmenu_T;
  *
  * sc_version is also here, for convenience.
  */
-typedef struct {
+typedef struct sctx
+{
 #ifdef FEAT_EVAL
     scid_T	sc_sid;		// script ID
     int		sc_seq;		// sourcing sequence number
@@ -95,7 +96,8 @@ typedef struct {
  * Reference to a buffer that stores the value of buf_free_count.
  * bufref_valid() only needs to check "buf" when the count differs.
  */
-typedef struct {
+typedef struct bufref
+{
     buf_T   *br_buf;
     int	    br_fnum;
     int	    br_buf_free_count;
@@ -125,7 +127,8 @@ typedef struct {
 
 #ifdef FEAT_TERMINAL
 # include "libvterm/include/vterm.h"
-typedef struct {
+typedef struct termcellcolor
+{
     VTermColor	fg;
     VTermColor	bg;
 } termcellcolor_T;
@@ -174,7 +177,7 @@ typedef struct taggy
  * Used twice in a window: for the current buffer and for all buffers.
  * Also used in wininfo_T.
  */
-typedef struct
+typedef struct winopt
 {
 #ifdef FEAT_ARABIC
     int		wo_arab;
@@ -372,7 +375,7 @@ typedef struct foldinfo
 /*
  * Structure to store info about the Visual area.
  */
-typedef struct
+typedef struct visualinfo
 {
     pos_T	vi_start;	// start pos of last VIsual
     pos_T	vi_end;		// end position of last VIsual
@@ -386,14 +389,14 @@ typedef struct
 
 // One line saved for undo.  After the NUL terminated text there might be text
 // properties, thus ul_len can be larger than STRLEN(ul_line) + 1.
-typedef struct {
+typedef struct undoline 
+{
     char_u	*ul_line;	// text of the line
     long	ul_len;		// length of the line including NUL, plus text
 				// properties
 } undoline_T;
 
 typedef struct u_entry u_entry_T;
-typedef struct u_header u_header_T;
 struct u_entry
 {
     u_entry_T	*ue_next;	// pointer to next entry in list
@@ -407,6 +410,7 @@ struct u_entry
 #endif
 };
 
+typedef struct u_header u_header_T;
 struct u_header
 {
     // The following have a pointer and a number. The number is used when
@@ -456,11 +460,10 @@ struct u_header
 
 #define ALIGN_MASK (ALIGN_SIZE - 1)
 
-typedef struct m_info minfo_T;
-
 /*
  * structure used to link chunks in one of the free chunk lists.
  */
+typedef struct m_info minfo_T;
 struct m_info
 {
 #ifdef ALIGN_LONG
@@ -476,7 +479,6 @@ struct m_info
  */
 
 typedef struct block_hdr    bhdr_T;
-typedef struct memfile	    memfile_T;
 typedef long		    blocknr_T;
 
 /*
@@ -487,7 +489,6 @@ typedef long		    blocknr_T;
  */
 
 typedef struct mf_hashitem_S mf_hashitem_T;
-
 struct mf_hashitem_S
 {
     mf_hashitem_T   *mhi_next;
@@ -544,23 +545,21 @@ struct block_hdr
  * number, we remember the translation to the new positive number in the
  * double linked trans lists. The structure is the same as the hash lists.
  */
-typedef struct nr_trans NR_TRANS;
 
-struct nr_trans
+typedef struct nr_trans
 {
     mf_hashitem_T nt_hashitem;		// header for hash table and key
 #define nt_old_bnum nt_hashitem.mhi_key	// old, negative, number
 
     blocknr_T	nt_new_bnum;		// new, positive, number
-};
+} NR_TRANS;
 
 
-typedef struct buffblock buffblock_T;
-typedef struct buffheader buffheader_T;
 
 /*
  * structure used to store one block of the stuff/redo/recording buffers
  */
+typedef struct buffblock buffblock_T;
 struct buffblock
 {
     buffblock_T	*b_next;	// pointer to next buffblock
@@ -570,21 +569,22 @@ struct buffblock
 /*
  * header used for the stuff buffer and the redo buffer
  */
-struct buffheader
+typedef struct buffheader
 {
     buffblock_T	bh_first;	// first (dummy) block of list
     buffblock_T	*bh_curr;	// buffblock for appending
     int		bh_index;	// index for reading
     int		bh_space;	// space in bh_curr for appending
-};
+} buffheader_T;
 
-typedef struct
+typedef struct save_redo
 {
     buffheader_T sr_redobuff;
     buffheader_T sr_old_redobuff;
 } save_redo_T;
 
-typedef enum {
+typedef enum xp_prefix
+{
     XP_PREFIX_NONE,	// prefix not used
     XP_PREFIX_NO,	// "no" prefix for bool option
     XP_PREFIX_INV,	// "inv" prefix for bool option
@@ -593,7 +593,8 @@ typedef enum {
 /*
  * :set operator types
  */
-typedef enum {
+typedef enum set_op
+{
     OP_NONE = 0,
     OP_ADDING,		// "opt+=arg"
     OP_PREPENDING,	// "opt^=arg"
@@ -643,7 +644,7 @@ typedef struct expand
  * These need to be saved when using CTRL-R |, that's why they are in a
  * structure.
  */
-typedef struct
+typedef struct cmdline_info
 {
     char_u	*cmdbuff;	// pointer to command line buffer
     int		cmdbufflen;	// length of cmdbuff
@@ -670,7 +671,7 @@ typedef struct
  * This needs to be saved for recursive commands, put them in a structure for
  * easy manipulation.
  */
-typedef struct
+typedef struct cmdmod
 {
     int		cmod_flags;		// CMOD_ flags
 #define CMOD_SANDBOX	    0x0001	// ":sandbox"
@@ -711,7 +712,8 @@ typedef struct
     int		cmod_did_esilent;	// incremented when emsg_silent is
 } cmdmod_T;
 
-typedef enum {
+typedef enum mfdirty
+{
     MF_DIRTY_NO = 0,		// no dirty blocks
     MF_DIRTY_YES,		// there are dirty blocks
     MF_DIRTY_YES_NOSYNC,	// there are dirty blocks, do not sync yet
@@ -719,7 +721,7 @@ typedef enum {
 
 #define MF_SEED_LEN	8
 
-struct memfile
+typedef struct memfile
 {
     char_u	*mf_fname;		// name of the file
     char_u	*mf_ffname;		// idem, full path
@@ -749,7 +751,7 @@ struct memfile
     int		mf_old_cm;
     char_u	mf_old_seed[MF_SEED_LEN];
 #endif
-};
+} memfile_T;
 
 /*
  * things used in memline.c
@@ -960,7 +962,6 @@ typedef struct argentry
  * value of "emsg_silent" if it was non-zero.  When this is done, the CSF_SILENT
  * flag below is set.
  */
-
 typedef struct eslist_elem eslist_T;
 struct eslist_elem
 {
@@ -974,7 +975,8 @@ struct eslist_elem
  */
 #define CSTACK_LEN	50
 
-typedef struct {
+typedef struct cstack
+{
     short	cs_flags[CSTACK_LEN];	// CSF_ flags
     char	cs_pending[CSTACK_LEN];	// CSTP_: what's pending in ":finally"
     union {
@@ -1057,7 +1059,7 @@ struct msglist
 /*
  * The exception types.
  */
-typedef enum
+typedef enum except_type
 {
     ET_USER,		// exception caused by ":throw" command
     ET_ERROR,		// error exception
@@ -1084,26 +1086,24 @@ struct vim_exception
  * enter_cleanup() and leave_cleanup().  Must be allocated as an automatic
  * variable by the (common) caller of these functions.
  */
-typedef struct cleanup_stuff cleanup_T;
-struct cleanup_stuff
+typedef struct cleanup_stuff
 {
     int pending;		// error/interrupt/exception state
     except_T *exception;	// exception value
-};
+} cleanup_T;
 
 /*
  * Exception state that is saved and restored when calling timer callback
  * functions and deferred functions.
  */
-typedef struct exception_state_S exception_state_T;
-struct exception_state_S
+typedef struct exception_state_S
 {
     except_T	*estate_current_exception;
     int		estate_did_throw;
     int		estate_need_rethrow;
     int		estate_trylevel;
     int		estate_did_emsg;
-};
+} exception_state_T;
 
 #ifdef FEAT_SYN_HL
 // struct passed to in_id_list()
@@ -1118,7 +1118,6 @@ struct sp_syn
  * Each keyword has one keyentry, which is linked in a hash list.
  */
 typedef struct keyentry keyentry_T;
-
 struct keyentry
 {
     keyentry_T	*ke_next;	// next entry with identical "keyword[]"
@@ -1148,7 +1147,6 @@ typedef struct buf_state
  * Used by b_sst_array[].
  */
 typedef struct syn_state synstate_T;
-
 struct syn_state
 {
     synstate_T	*sst_next;	// next entry in used or free list
@@ -1231,7 +1229,7 @@ typedef void *iconv_t;
 /*
  * Used for the typeahead buffer: typebuf.
  */
-typedef struct
+typedef struct typebuf
 {
     char_u	*tb_buf;	// buffer for typed characters
     char_u	*tb_noremap;	// mapping flags for characters in tb_buf[]
@@ -1245,7 +1243,7 @@ typedef struct
 } typebuf_T;
 
 // Struct to hold the saved typeahead for save_typeahead().
-typedef struct
+typedef struct tasave
 {
     typebuf_T		save_typebuf;
     int			typebuf_valid;	    // TRUE when save_typebuf valid
@@ -1261,7 +1259,7 @@ typedef struct
 /*
  * Used for conversion of terminal I/O and script files.
  */
-typedef struct
+typedef struct vimconv
 {
     int		vc_type;	// zero or one of the CONV_ values
     int		vc_factor;	// max. expansion factor
@@ -1332,7 +1330,7 @@ struct mapblock
 /*
  * Used for highlighting in the status line.
  */
-typedef struct
+typedef struct stl_hlrec
 {
     char_u	*start;
     int		userhl;		// 0: no HL, 1-9: User HL, < 0 for syn ID
@@ -1452,7 +1450,7 @@ typedef struct blobvar_S blob_T;
 // When used temporarily "cb_name" is not allocated.  The refcounts to either
 // the function or the partial are incremented and need to be decremented
 // later with free_callback().
-typedef struct {
+typedef struct callback {
     char_u	*cb_name;
     partial_T	*cb_partial;
     int		cb_free_name;	    // cb_name was allocated
@@ -1460,24 +1458,16 @@ typedef struct {
 
 typedef struct isn_S isn_T;	    // instruction
 typedef struct dfunc_S dfunc_T;	    // :def function
-
-typedef struct type_S type_T;
 typedef struct ufunc_S ufunc_T;
-
 typedef struct jobvar_S job_T;
-typedef struct readq_S readq_T;
-typedef struct writeq_S writeq_T;
-typedef struct jsonq_S jsonq_T;
-typedef struct cbq_S cbq_T;
+
 typedef struct channel_S channel_T;
 typedef struct cctx_S cctx_T;
 typedef struct ectx_S ectx_T;
 typedef struct instr_S instr_T;
 typedef struct class_S class_T;
-typedef struct object_S object_T;
-typedef struct typealias_S typealias_T;
 
-typedef enum
+typedef enum vartype
 {
     VAR_UNKNOWN = 0,	// not set, any type or "void" allowed
     VAR_ANY,		// used for "any" type
@@ -1501,7 +1491,9 @@ typedef enum
 } vartype_T;
 
 // A type specification.
-struct type_S {
+typedef struct type_S type_T;
+struct type_S 
+{
     vartype_T	    tt_type;
     int8_T	    tt_argcount;    // for func, incl. vararg, -1 for unknown
     int8_T	    tt_min_argcount; // number of non-optional arguments
@@ -1511,7 +1503,8 @@ struct type_S {
     type_T	    **tt_args;	    // func argument types, allocated
 };
 
-typedef struct {
+typedef struct type2 
+{
     type_T	*type_curr;	    // current type, value type
     type_T	*type_decl;	    // declared type or equal to type_current
 } type2_T;
@@ -1524,7 +1517,8 @@ typedef struct {
 #define TTFLAG_CONST	    0x20    // cannot be changed
 #define TTFLAG_SUPER	    0x40    // object from "super".
 
-typedef enum {
+typedef enum omacc
+{
     VIM_ACCESS_PRIVATE,	// read/write only inside the class
     VIM_ACCESS_READ,	// read everywhere, write only inside the class
     VIM_ACCESS_ALL	// read/write everywhere
@@ -1537,7 +1531,8 @@ typedef enum {
 /*
  * Object methods called by builtin functions (e.g. string(), empty(), etc.)
  */
-typedef enum {
+typedef enum class_builtin 
+{
     CLASS_BUILTIN_INVALID,
     CLASS_BUILTIN_STRING,
     CLASS_BUILTIN_EMPTY,
@@ -1548,7 +1543,8 @@ typedef enum {
 /*
  * Entry for an object or class member variable.
  */
-typedef struct {
+typedef struct ocmember 
+{
     char_u	*ocm_name;	// allocated
     omacc_T	ocm_access;
     type_T	*ocm_type;
@@ -1558,7 +1554,8 @@ typedef struct {
 
 // used for the lookup table of a class member index and object method index
 typedef struct itf2class_S itf2class_T;
-struct itf2class_S {
+struct itf2class_S 
+{
     itf2class_T	*i2c_next;
     class_T	*i2c_class;
     int		i2c_is_method;	    // TRUE for method indexes
@@ -1622,6 +1619,7 @@ struct class_S
 
 // Used for v_object of typval of VAR_OBJECT.
 // The member variables follow in an array of typval_T.
+typedef struct object_S object_T;
 struct object_S
 {
     class_T	*obj_class;	    // class this object is created for;
@@ -1633,6 +1631,7 @@ struct object_S
     int		obj_copyID;	    // used by garbage collection
 };
 
+typedef struct typealias_S typealias_T;
 struct typealias_S
 {
     int	    ta_refcount;
@@ -1681,7 +1680,6 @@ struct typval_S
  * Structure to hold an item of a list: an internal variable without a name.
  */
 typedef struct listitem_S listitem_T;
-
 struct listitem_S
 {
     listitem_T	*li_next;	// next item in list
@@ -1691,7 +1689,6 @@ struct listitem_S
 
 // Struct used by those that are using an item in a list.
 typedef struct listwatch_S listwatch_T;
-
 struct listwatch_S
 {
     listitem_T		*lw_item;	// item being watched
@@ -1738,7 +1735,8 @@ struct listvar_S
 /*
  * Static list with 10 items.  Use init_static_list() to initialize.
  */
-typedef struct {
+typedef struct staticList10
+{
     list_T	sl_list;	// must be first
     listitem_T	sl_items[10];
 } staticList10_T;
@@ -1748,26 +1746,24 @@ typedef struct {
  * Also used for a variable.
  * The key is copied into "di_key" to avoid an extra alloc/free for it.
  */
-struct dictitem_S
+typedef struct dictitem_S
 {
     typval_T	di_tv;		// type and value of the variable
     char_u	di_flags;	// DI_FLAGS_ flags (only used for variable)
     char_u	di_key[1];	// key (actually longer!)
-};
-typedef struct dictitem_S dictitem_T;
+} dictitem_T;
 
 /*
  * A dictitem with a 16 character key (plus NUL).  This is an efficient way to
  * have a fixed-size dictitem.
  */
 #define DICTITEM16_KEY_LEN 16
-struct dictitem16_S
+typedef struct dictitem16_S
 {
     typval_T	di_tv;		// type and value of the variable
     char_u	di_flags;	// DI_FLAGS_ flags (only used for variable)
     char_u	di_key[DICTITEM16_KEY_LEN + 1];	// key
-};
-typedef struct dictitem16_S dictitem16_T;
+} dictitem16_T;
 
 // Flags for "di_flags"
 #define DI_FLAGS_RO	   0x01	    // read-only variable
@@ -1807,14 +1803,12 @@ typedef int (*cfunc_T)(int argcount, typval_T *argvars, typval_T *rettv, void *s
 typedef void (*cfunc_free_T)(void *state);
 
 // type of getline() last argument
-typedef enum {
+typedef enum getline_opt {
     GETLINE_NONE,	    // do not concatenate any lines
     GETLINE_CONCAT_CONT,    // concatenate continuation lines with backslash
     GETLINE_CONCAT_CONTBAR, // concatenate continuation lines with \ and |
     GETLINE_CONCAT_ALL	    // concatenate continuation and Vim9 # comment lines
 } getline_opt_T;
-
-typedef struct svar_S svar_T;
 
 #if defined(FEAT_EVAL) || defined(PROTO)
 /*
@@ -1837,7 +1831,7 @@ typedef struct
 typedef struct funccall_S funccall_T;
 
 // values used for "uf_def_status"
-typedef enum {
+typedef enum def_status {
     UF_NOT_COMPILED,	    // executed with interpreter
     UF_TO_BE_COMPILED,	    // to be compiled before execution
     UF_COMPILING,	    // in compile_def_function()
@@ -2020,7 +2014,8 @@ typedef struct
 } funcdict_T;
 
 typedef struct funccal_entry funccal_entry_T;
-struct funccal_entry {
+struct funccal_entry 
+{
     void	    *top_funccal;
     funccal_entry_T *next;
 };
@@ -2034,7 +2029,7 @@ struct funccal_entry {
  * Holds the hashtab with variables local to each sourced script.
  * Each item holds a variable (nameless) that points to the dict_T.
  */
-typedef struct {
+typedef struct scriptvar {
     dictitem_T	sv_var;
     dict_T	sv_dict;
 } scriptvar_T;
@@ -2076,15 +2071,17 @@ struct sallvar_S {
 /*
  * Entry for "sn_var_vals".  Used for script-local variables.
  */
-struct svar_S {
+typedef struct svar_S
+{
     char_u	*sv_name;	// points into "sn_all_vars" di_key
     typval_T	*sv_tv;		// points into "sn_vars" or "sn_all_vars" di_tv
     type_T	*sv_type;
     int		sv_flags;	// SVFLAG_ values above
     int		sv_const;	// 0, ASSIGN_CONST or ASSIGN_FINAL
-};
+} svar_T;
 
-typedef struct {
+typedef struct imported 
+{
     char_u	*imp_name;	    // name imported as (allocated)
     scid_T	imp_sid;	    // script ID of "from"
     int		imp_flags;	    // IMP_FLAGS_ values
@@ -2097,7 +2094,7 @@ typedef struct {
  * Info about an encountered script.
  * When sn_state has SN_STATE_NOT_LOADED, it has not been sourced yet.
  */
-typedef struct
+typedef struct scriptitem
 {
     char_u	*sn_name;	    // full path of script file
     int		sn_script_seq;	    // latest sctx_T sc_seq value
@@ -2171,7 +2168,8 @@ typedef struct
 
 // Struct passed through eval() functions.
 // See EVALARG_EVALUATE for a fixed value with eval_flags set to EVAL_EVALUATE.
-typedef struct {
+typedef struct evalarg 
+{
     int		eval_flags;	    // EVAL_ flag values below
     int		eval_break_count;   // nr of line breaks consumed
 
@@ -2221,14 +2219,14 @@ typedef struct sn_prl_S
 
 #  define PRL_ITEM(si, idx)	(((sn_prl_T *)(si)->sn_prl_ga.ga_data)[(idx)])
 
-typedef struct {
+typedef struct proftime {
     int		pi_started_profiling;
     proftime_T	pi_wait_start;
     proftime_T	pi_call_start;
 } profinfo_T;
 
 # else
-typedef struct
+typedef struct profinfo_T
 {
     int	    dummy;
 } profinfo_T;
@@ -2239,23 +2237,28 @@ struct ufunc_S
 {
     int	    dummy;
 };
-typedef struct
+
+typedef struct funccall
 {
     int	    dummy;
 } funccall_T;
-typedef struct
+
+typedef struct funcdict
 {
     int	    dummy;
 } funcdict_T;
-typedef struct
+
+typedef struct funccal_entry
 {
     int	    dummy;
 } funccal_entry_T;
-typedef struct
+
+typedef struct scriptitem
 {
     int	    dummy;
 } scriptitem_T;
-typedef struct
+
+typedef struct evalarg
 {
     int	    dummy;
 } evalarg_T;
@@ -2268,7 +2271,7 @@ typedef struct
 //   new_argcount = fe_argv_func(current_argcount, argv, partial_argcount,
 //							called_func)
 //
-typedef struct {
+typedef struct funcexe {
     int		(* fe_argv_func)(int, typval_T *, int, ufunc_T *);
     linenr_T	fe_firstline;	// first line of range
     linenr_T	fe_lastline;	// last line of range
@@ -2374,7 +2377,7 @@ struct partial_S
     object_T	*pt_obj;	// object method
 };
 
-typedef struct {
+typedef struct loopvarinfo {
     short	lvi_depth;	    // current nested loop depth
     struct {
 	short	var_idx;	    // index of first variable inside loop
@@ -2387,7 +2390,7 @@ typedef struct AutoPatCmd_S AutoPatCmd_T;
 /*
  * Entry in the execution stack "exestack".
  */
-typedef enum {
+typedef enum etype {
     ETYPE_TOP,		    // toplevel
     ETYPE_SCRIPT,	    // sourcing script, use es_info.sctx
     ETYPE_UFUNC,	    // user function, use es_info.ufunc
@@ -2400,7 +2403,7 @@ typedef enum {
     ETYPE_SPELL,	    // loading spell file
 } etype_T;
 
-typedef struct {
+typedef struct estack {
     long      es_lnum;      // replaces "sourcing_lnum"
     char_u    *es_name;     // replaces "sourcing_name"
     etype_T   es_type;
@@ -2418,7 +2421,7 @@ typedef struct {
 } estack_T;
 
 // Information returned by get_tty_info().
-typedef struct {
+typedef struct ttyinfo {
     int backspace;	// what the Backspace key produces
     int enter;		// what the Enter key produces
     int interrupt;	// interrupt character
@@ -2426,7 +2429,7 @@ typedef struct {
 } ttyinfo_T;
 
 // Status of a job.  Order matters!
-typedef enum
+typedef enum jobstatus
 {
     JOB_FAILED,
     JOB_STARTED,
@@ -2473,6 +2476,7 @@ struct jobvar_S
 /*
  * Structures to hold info about a Channel.
  */
+typedef struct readq_S readq_T;
 struct readq_S
 {
     char_u	*rq_buffer;
@@ -2481,6 +2485,7 @@ struct readq_S
     readq_T	*rq_prev;
 };
 
+typedef struct writeq_S writeq_T;
 struct writeq_S
 {
     garray_T	wq_ga;
@@ -2488,6 +2493,7 @@ struct writeq_S
     writeq_T	*wq_prev;
 };
 
+typedef struct jsonq_S jsonq_T;
 struct jsonq_S
 {
     typval_T	*jq_value;
@@ -2496,6 +2502,7 @@ struct jsonq_S
     int		jq_no_callback; // TRUE when no callback was found
 };
 
+typedef struct cbq_S cbq_T;
 struct cbq_S
 {
     callback_T	cq_callback;
@@ -2505,7 +2512,7 @@ struct cbq_S
 };
 
 // mode for a channel
-typedef enum
+typedef enum ch_mode
 {
     CH_MODE_NL = 0,
     CH_MODE_RAW,
@@ -2514,7 +2521,8 @@ typedef enum
     CH_MODE_LSP		// Language Server Protocol (http + json)
 } ch_mode_T;
 
-typedef enum {
+typedef enum job_io
+{
     JIO_PIPE,	    // default
     JIO_NULL,
     JIO_FILE,
@@ -2526,7 +2534,8 @@ typedef enum {
 
 // Ordering matters, it is used in for loops: IN is last, only SOCK/OUT/ERR
 // are polled.
-typedef enum {
+typedef enum ch_part
+{
     PART_SOCK = 0,
 #define CH_SOCK_FD	CH_PART_FD(PART_SOCK)
 #ifdef FEAT_JOB_CHANNEL
@@ -2543,7 +2552,8 @@ typedef enum {
 #define INVALID_FD	(-1)
 
 // The per-fd info for a channel.
-typedef struct {
+typedef struct chanpart
+{
     sock_T	ch_fd;	    // socket/stdin/stdout/stderr, -1 if not used
 
 # if defined(UNIX) && !defined(HAVE_SELECT)
@@ -2591,7 +2601,8 @@ typedef struct {
     linenr_T	ch_buf_bot;	// last line to send
 } chanpart_T;
 
-struct channel_S {
+struct channel_S 
+{
     channel_T	*ch_next;
     channel_T	*ch_prev;
 
@@ -2702,7 +2713,7 @@ struct channel_S {
 /*
  * Options for job and channel commands.
  */
-typedef struct
+typedef struct jobopt
 {
     int		jo_set;		// JO_ bits for values that were set
     int		jo_set2;	// JO2_ bits for values that were set
@@ -2808,7 +2819,7 @@ typedef struct list_stack_S
  * Structure used for iterating over dictionary items.
  * Initialize with dict_iterate_start().
  */
-typedef struct
+typedef struct dict_iterator
 {
     long_u	dit_todo;
     hashitem_T	*dit_hi;
@@ -2836,7 +2847,8 @@ typedef struct qf_info_S qf_info_T;
 /*
  * Used for :syntime: timing of executing a syntax pattern.
  */
-typedef struct {
+typedef struct syn_time
+{
     proftime_T	total;		// total time used
     proftime_T	slowest;	// time of slowest call
     long	count;		// nr of times used
@@ -2867,7 +2879,8 @@ struct timer_S
  * Structure to hold the type of encryption and the state of encryption or
  * decryption.
  */
-typedef struct {
+typedef struct cryptstate
+{
     int	    method_nr;
     void    *method_state;  // method-specific state information
 } cryptstate_T;
@@ -2885,7 +2898,8 @@ typedef struct {
 # define CRYPT_NOT_INPLACE 1
 
 // Struct for passing arguments down to the crypt_init functions
-typedef struct {
+typedef struct crypt_arg
+{
     char_u	*cat_salt;
     int		cat_salt_len;
     char_u	*cat_seed;
@@ -2898,7 +2912,8 @@ typedef struct {
 #endif
 
 #ifdef FEAT_PROP_POPUP
-typedef enum {
+typedef enum poppos
+{
     POPPOS_BOTLEFT,
     POPPOS_TOPLEFT,
     POPPOS_BOTRIGHT,
@@ -2908,7 +2923,8 @@ typedef enum {
     POPPOS_NONE
 } poppos_T;
 
-typedef enum {
+typedef enum popclose
+{
     POPCLOSE_NONE,
     POPCLOSE_BUTTON,
     POPCLOSE_CLICK
@@ -2924,7 +2940,8 @@ typedef enum {
  * These are items normally related to a buffer.  But when using ":ownsyntax"
  * a window may have its own instance.
  */
-typedef struct {
+typedef struct synblock
+{
 #ifdef FEAT_SYN_HL
     hashtab_T	b_keywtab;		// syntax keywords hash table
     hashtab_T	b_keywtab_ic;		// idem, ignore case
@@ -3654,7 +3671,7 @@ struct frame_S
  * For 'hlsearch' there is one pattern for all windows.  For ":match" and the
  * match functions there is a different pattern for each window.
  */
-typedef struct
+typedef struct match
 {
     regmmatch_T	rm;	    // points to the regexp program; contains last
 			    // found match (may continue in next line)
@@ -3674,7 +3691,7 @@ typedef struct
 /*
  * Same as lpos_T, but with additional field len.
  */
-typedef struct
+typedef struct llpos
 {
     linenr_T	lnum;	// line number
     colnr_T	col;	// column number
@@ -3712,7 +3729,7 @@ struct matchitem
 
 // Structure to store last cursor position and topline.  Used by check_lnums()
 // and reset_lnums().
-typedef struct
+typedef struct pos_save
 {
     int		w_topline_save;	// original topline value
     int		w_topline_corr;	// corrected topline value
@@ -3721,7 +3738,8 @@ typedef struct
 } pos_save_T;
 
 #ifdef FEAT_MENU
-typedef struct {
+typedef struct winbar_item
+{
     int		wb_startcol;
     int		wb_endcol;
     vimmenu_T	*wb_menu;
@@ -3731,7 +3749,7 @@ typedef struct {
 /*
  * Characters from the 'listchars' option
  */
-typedef struct
+typedef struct lcs_chars
 {
     int		eol;
     int		ext;
@@ -3753,7 +3771,7 @@ typedef struct
 /*
  * Characters from the 'fillchars' option
  */
-typedef struct
+typedef struct fill_chars
 {
     int	stl;
     int	stlnc;
@@ -4395,7 +4413,7 @@ typedef int vimmenu_T;
  * Struct to save values in before executing autocommands for a buffer that is
  * not the current buffer.
  */
-typedef struct
+typedef struct aco_save
 {
     int		use_aucmd_win_idx;  // index in aucmd_win[] if >= 0
     int		save_curwin_id;	    // ID of saved curwin
@@ -4414,7 +4432,7 @@ typedef struct
 /*
  * Generic option table item, only used for printer at the moment.
  */
-typedef struct
+typedef struct option_table
 {
     const char	*name;
     int		hasnum;
@@ -4427,7 +4445,7 @@ typedef struct
 /*
  * Structure to hold printing color and font attributes.
  */
-typedef struct
+typedef struct ptr_text_attr
 {
     long_u	fg_color;
     long_u	bg_color;
@@ -4440,7 +4458,7 @@ typedef struct
 /*
  * Structure passed back to the generic printer code.
  */
-typedef struct
+typedef struct prt_settings
 {
     int		n_collated_copies;
     int		n_uncollated_copies;
@@ -4466,7 +4484,7 @@ typedef struct
 /*
  * Used for popup menu items.
  */
-typedef struct
+typedef struct pumitem
 {
     char_u	*pum_text;	  // main menu text
     char_u	*pum_kind;	  // extra kind text (may be truncated)
@@ -4481,7 +4499,7 @@ typedef struct
 /*
  * Structure used for get_tagfname().
  */
-typedef struct
+typedef struct tagname
 {
     char_u	*tn_tags;	// value of 'tags' when starting
     char_u	*tn_np;		// current position in tn_tags
@@ -4490,7 +4508,8 @@ typedef struct
     void	*tn_search_ctx;
 } tagname_T;
 
-typedef struct {
+typedef struct context_sha256
+{
   UINT32_T total[2];
   UINT32_T state[8];
   char_u   buffer[64];
@@ -4499,7 +4518,7 @@ typedef struct {
 /*
  * types for expressions.
  */
-typedef enum
+typedef enum exprtype
 {
     EXPR_UNKNOWN = 0,
     EXPR_EQUAL,		// ==
@@ -4528,7 +4547,7 @@ typedef enum
 /*
  * Structure used for reading in json_decode().
  */
-struct js_reader
+typedef struct js_reader
 {
     char_u	*js_buf;	// text to be decoded
     char_u	*js_end;	// NUL in js_buf
@@ -4538,8 +4557,7 @@ struct js_reader
 				// return TRUE when the buffer was filled
     void	*js_cookie;	// can be used by js_fill
     int		js_cookie_arg;	// can be used by js_fill
-};
-typedef struct js_reader js_read_T;
+} js_read_T;
 
 // Maximum number of commands from + or -c arguments.
 #define MAX_ARG_CMDS 10
@@ -4550,7 +4568,7 @@ typedef struct js_reader js_read_T;
 #define	WIN_TABS    3	    // "-p" windows on tab pages
 
 // Struct for various parameters passed between main() and other functions.
-typedef struct
+typedef struct mparm
 {
     int		argc;
     char	**argv;
@@ -4683,7 +4701,8 @@ typedef struct lval_S
 /**
  * This specifies optional parameters for get_lval(). Arguments may be NULL.
  */
-typedef struct lval_root_S {
+typedef struct lval_root_S 
+{
     typval_T	*lr_tv;		// Base typval.
     class_T	*lr_cl_exec;	// Executing class for access checking.
     int		lr_is_arg;	// name is an arg (not a member).
@@ -4691,7 +4710,8 @@ typedef struct lval_root_S {
 
 // Structure used to save the current state.  Used when executing Normal mode
 // commands while in any other mode.
-typedef struct {
+typedef struct save_state
+{
     int		save_msg_scroll;
     int		save_restart_edit;
     int		save_msg_didout;
@@ -4705,21 +4725,23 @@ typedef struct {
     tasave_T	tabuf;
 } save_state_T;
 
-typedef struct {
+typedef struct vimvars_save
+{
     varnumber_T vv_prevcount;
     varnumber_T vv_count;
     varnumber_T vv_count1;
 } vimvars_save_T;
 
 // Scope for changing directory
-typedef enum {
+typedef enum cdscope
+{
     CDSCOPE_GLOBAL,	// :cd
     CDSCOPE_TABPAGE,	// :tcd
     CDSCOPE_WINDOW	// :lcd
 } cdscope_T;
 
 // Variable flavor
-typedef enum
+typedef enum var_flavour
 {
     VAR_FLAVOUR_DEFAULT,	// doesn't start with uppercase
     VAR_FLAVOUR_SESSION,	// starts with uppercase, some lower
@@ -4727,7 +4749,8 @@ typedef enum
 } var_flavour_T;
 
 // argument for mouse_find_win()
-typedef enum {
+typedef enum mouse_find 
+{
     IGNORE_POPUP,	// only check non-popup windows
     FIND_POPUP,		// also find popup windows
     FAIL_POPUP		// return NULL if mouse on popup window
@@ -4778,7 +4801,7 @@ struct block_def
 };
 
 // Each yank register has an array of pointers to lines.
-typedef struct
+typedef struct yankreg
 {
     char_u	**y_array;	// pointer to array of line pointers
     linenr_T	y_size;		// number of lines in y_array
@@ -4812,7 +4835,7 @@ typedef struct spat
 /*
  * Optional extra arguments for searchit().
  */
-typedef struct
+typedef struct searchit_arg
 {
     linenr_T	sa_stop_lnum;	// stop after this line number when != 0
 #ifdef FEAT_RELTIME
@@ -4830,7 +4853,8 @@ typedef struct
  * It is shared between do_source() and getsourceline().
  * This is passed to do_cmdline().
  */
-typedef struct {
+typedef struct source_cookie
+{
     FILE	*fp;		// opened file for sourcing
     char_u	*nextline;	// if not NULL: line that was read ahead
     linenr_T	sourcing_lnum;	// line number of the source file
@@ -4882,7 +4906,8 @@ typedef struct {
 #define ICONV_MULT 8
 
 // Used for "magic_overruled".
-typedef enum {
+typedef enum optmagic
+{
     OPTION_MAGIC_NOT_SET,	// p_magic not overruled
     OPTION_MAGIC_ON,		// magic on inside regexp
     OPTION_MAGIC_OFF		// magic off inside regexp
@@ -4892,14 +4917,16 @@ typedef enum {
 // The order and values matter:
 //  magic <= MAGIC_OFF includes MAGIC_NONE
 //  magic >= MAGIC_ON  includes MAGIC_ALL
-typedef enum {
+typedef enum magic
+{
     MAGIC_NONE = 1,		// "\V" very unmagic
     MAGIC_OFF = 2,		// "\M" or 'magic' off
     MAGIC_ON = 3,		// "\m" or 'magic'
     MAGIC_ALL = 4		// "\v" very magic
 } magic_T;
 
-typedef enum {
+typedef enum wherekind
+{
     WT_UNKNOWN = 0,	// Unknown or unspecified location
     WT_ARGUMENT,
     WT_VARIABLE,
@@ -4914,7 +4941,8 @@ typedef enum {
 // indicate where the error happened.  Also used for doing covariance type
 // check for object method return type and contra-variance type check for
 // object method arguments.
-typedef struct {
+typedef struct where
+{
     char	*wt_func_name;  // function name or NULL
     char	wt_index;	// argument or variable index, 0 means unknown
     wherekind_T	wt_kind;	// type check location
@@ -4923,13 +4951,15 @@ typedef struct {
 #define WHERE_INIT {NULL, 0, WT_UNKNOWN}
 
 // Struct passed to get_v_event() and restore_v_event().
-typedef struct {
+typedef struct save_v_event
+{
     int		sve_did_save;
     hashtab_T	sve_hashtab;
 } save_v_event_T;
 
 // Enum used by filter(), map(), mapnew() and foreach()
-typedef enum {
+typedef enum filtermap
+{
     FILTERMAP_FILTER,
     FILTERMAP_MAP,
     FILTERMAP_MAPNEW,
@@ -4937,7 +4967,8 @@ typedef enum {
 } filtermap_T;
 
 // Structure used by switch_win() to pass values to restore_win()
-typedef struct {
+typedef struct switchwin
+{
     win_T	*sw_curwin;
     tabpage_T	*sw_curtab;
     int		sw_same_win;	    // VIsual_active was not reset
@@ -4953,7 +4984,8 @@ typedef struct {
 } fuzmatch_str_T;
 
 // Argument for lbr_chartabsize().
-typedef struct {
+typedef struct chartabsize 
+{
     win_T	*cts_win;
     char_u	*cts_line;		// start of the line
     char_u	*cts_ptr;		// current position in line
@@ -4981,7 +5013,7 @@ typedef struct {
  * Argument for the callback function (opt_did_set_cb_T) invoked after an
  * option value is modified.
  */
-typedef struct
+typedef struct optset
 {
     // Pointer to the option variable.  The variable can be a long (numeric
     // option), an int (boolean option) or a char pointer (string option).
@@ -5034,7 +5066,7 @@ typedef struct
  * Argument for the callback function (opt_expand_cb_T) invoked after a string
  * option value is expanded for cmdline completion.
  */
-typedef struct
+typedef struct optexpand
 {
     // Pointer to the option variable. It's always a string.
     char_u	*oe_varp;
@@ -5061,7 +5093,8 @@ typedef struct
 /*
  * Spell checking variables passed from win_update() to win_line().
  */
-typedef struct {
+typedef struct spellvars
+{
     int		spv_has_spell;	    // drawn window has spell checking
 #ifdef FEAT_SPELL
     int		spv_unchanged;	    // not updating for changed text
@@ -5077,7 +5110,7 @@ typedef struct {
 #define STRLEN_LITERAL(s) (sizeof(s) - 1)
 
 // Store a key/value pair
-typedef struct
+typedef struct keyvalue
 {
     int	    key;        // the key
     char    *value;     // the value string
