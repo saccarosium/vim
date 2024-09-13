@@ -389,7 +389,7 @@ typedef struct visualinfo
 
 // One line saved for undo.  After the NUL terminated text there might be text
 // properties, thus ul_len can be larger than STRLEN(ul_line) + 1.
-typedef struct undoline 
+typedef struct undoline
 {
     char_u	*ul_line;	// text of the line
     long	ul_len;		// length of the line including NUL, plus text
@@ -1492,7 +1492,7 @@ typedef enum vartype
 
 // A type specification.
 typedef struct type_S type_T;
-struct type_S 
+struct type_S
 {
     vartype_T	    tt_type;
     int8_T	    tt_argcount;    // for func, incl. vararg, -1 for unknown
@@ -1503,7 +1503,7 @@ struct type_S
     type_T	    **tt_args;	    // func argument types, allocated
 };
 
-typedef struct type2 
+typedef struct type2
 {
     type_T	*type_curr;	    // current type, value type
     type_T	*type_decl;	    // declared type or equal to type_current
@@ -1531,7 +1531,7 @@ typedef enum omacc
 /*
  * Object methods called by builtin functions (e.g. string(), empty(), etc.)
  */
-typedef enum class_builtin 
+typedef enum class_builtin
 {
     CLASS_BUILTIN_INVALID,
     CLASS_BUILTIN_STRING,
@@ -1543,7 +1543,7 @@ typedef enum class_builtin
 /*
  * Entry for an object or class member variable.
  */
-typedef struct ocmember 
+typedef struct ocmember
 {
     char_u	*ocm_name;	// allocated
     omacc_T	ocm_access;
@@ -1554,7 +1554,7 @@ typedef struct ocmember
 
 // used for the lookup table of a class member index and object method index
 typedef struct itf2class_S itf2class_T;
-struct itf2class_S 
+struct itf2class_S
 {
     itf2class_T	*i2c_next;
     class_T	*i2c_class;
@@ -2014,7 +2014,7 @@ typedef struct
 } funcdict_T;
 
 typedef struct funccal_entry funccal_entry_T;
-struct funccal_entry 
+struct funccal_entry
 {
     void	    *top_funccal;
     funccal_entry_T *next;
@@ -2080,7 +2080,7 @@ typedef struct svar_S
     int		sv_const;	// 0, ASSIGN_CONST or ASSIGN_FINAL
 } svar_T;
 
-typedef struct imported 
+typedef struct imported
 {
     char_u	*imp_name;	    // name imported as (allocated)
     scid_T	imp_sid;	    // script ID of "from"
@@ -2168,7 +2168,7 @@ typedef struct scriptitem
 
 // Struct passed through eval() functions.
 // See EVALARG_EVALUATE for a fixed value with eval_flags set to EVAL_EVALUATE.
-typedef struct evalarg 
+typedef struct evalarg
 {
     int		eval_flags;	    // EVAL_ flag values below
     int		eval_break_count;   // nr of line breaks consumed
@@ -2601,7 +2601,7 @@ typedef struct chanpart
     linenr_T	ch_buf_bot;	// last line to send
 } chanpart_T;
 
-struct channel_S 
+struct channel_S
 {
     channel_T	*ch_next;
     channel_T	*ch_prev;
@@ -4701,7 +4701,7 @@ typedef struct lval_S
 /**
  * This specifies optional parameters for get_lval(). Arguments may be NULL.
  */
-typedef struct lval_root_S 
+typedef struct lval_root_S
 {
     typval_T	*lr_tv;		// Base typval.
     class_T	*lr_cl_exec;	// Executing class for access checking.
@@ -4749,7 +4749,7 @@ typedef enum var_flavour
 } var_flavour_T;
 
 // argument for mouse_find_win()
-typedef enum mouse_find 
+typedef enum mouse_find
 {
     IGNORE_POPUP,	// only check non-popup windows
     FIND_POPUP,		// also find popup windows
@@ -4984,7 +4984,7 @@ typedef struct {
 } fuzmatch_str_T;
 
 // Argument for lbr_chartabsize().
-typedef struct chartabsize 
+typedef struct chartabsize
 {
     win_T	*cts_win;
     char_u	*cts_line;		// start of the line
