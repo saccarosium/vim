@@ -19,23 +19,7 @@ if &cp || exists("g:loaded_netrw")
   finish
 endif
 
-" Check that vim has patches that netrw requires.
-" Patches needed for v7.4: 1557, and 213.
-" (netrw will benefit from vim's having patch#656, too)
-let s:needspatches=[1557,213]
-if exists("s:needspatches")
-  for ptch in s:needspatches
-    if v:version < 704 || (v:version == 704 && !has("patch".ptch))
-      if !exists("s:needpatch{ptch}")
-        unsilent echomsg "***sorry*** this version of netrw requires vim v7.4 with patch#".ptch
-      endif
-      let s:needpatch{ptch}= 1
-      finish
-    endif
-  endfor
-endif
-
-let g:loaded_netrw = "v175"
+let g:loaded_netrw = "v176"
 
 let s:keepcpo= &cpo
 setl cpo&vim
@@ -193,6 +177,12 @@ let s:NOTE    = 0
 let s:WARNING = 1
 let s:ERROR   = 2
 call s:NetrwInit("g:netrw_errorlvl", s:NOTE)
+
+let s:has_balloon = !has('nvim') &&
+            \ has("balloon_eval") &&
+            \ has("syntax") &&
+            \ exists("g:syntax_on") &&
+            \ !exists("g:netrw_nobeval")
 
 " ---------------------------------------------------------------------
 " Default option values: {{{2
@@ -456,10 +446,12 @@ else
   call s:NetrwInit("g:netrw_localmkdir","mkdir")
 endif
 call s:NetrwInit("g:netrw_remote_mkdir","mkdir")
+
 if exists("g:netrw_local_movecmd")
   let g:netrw_localmovecmd= g:netrw_local_movecmd
   call netrw#ErrorMsg(s:NOTE,"g:netrw_local_movecmd is deprecated in favor of g:netrw_localmovecmd",88)
 endif
+
 if !exists("g:netrw_localmovecmd")
   if has("win32")
     if g:netrw_cygwin
@@ -474,9 +466,7 @@ if !exists("g:netrw_localmovecmd")
     let g:netrw_localmovecmd= ""
   endif
 endif
-" following serves as an example for how to insert a version&patch specific test
-"if v:version < 704 || (v:version == 704 && !has("patch1107"))
-"endif
+
 call s:NetrwInit("g:netrw_liststyle"  , s:THINLIST)
 " sanity checks
 if g:netrw_liststyle < 0 || g:netrw_liststyle >= s:MAXLIST
@@ -581,22 +571,14 @@ call s:NetrwInit("s:netrw_posn",'{}')
 " ======================
 "  Netrw Initialization: {{{1
 " ======================
-if v:version >= 700 && has("balloon_eval") && !exists("s:initbeval") && !exists("g:netrw_nobeval") && has("syntax") && exists("g:syntax_on")
-  " call Decho("installed beval events",'~'.expand("<slnum>"))
+if s:has_balloon
   let &l:bexpr = "netrw#BalloonHelp()"
-  " call Decho("&l:bexpr<".&l:bexpr."> buf#".bufnr())
-  au FileType netrw      setl beval
-  au WinLeave *          if &ft == "netrw" && exists("s:initbeval")|let &beval= s:initbeval|endif
-  au VimEnter *          let s:initbeval= &beval
-  "else " Decho
-  " if v:version < 700           | call Decho("did not install beval events: v:version=".v:version." < 700","~".expand("<slnum>"))     | endif
-  " if !has("balloon_eval")      | call Decho("did not install beval events: does not have balloon_eval","~".expand("<slnum>"))        | endif
-  " if exists("s:initbeval")     | call Decho("did not install beval events: s:initbeval exists","~".expand("<slnum>"))                | endif
-  " if exists("g:netrw_nobeval") | call Decho("did not install beval events: g:netrw_nobeval exists","~".expand("<slnum>"))            | endif
-  " if !has("syntax")            | call Decho("did not install beval events: does not have syntax highlighting","~".expand("<slnum>")) | endif
-  " if exists("g:syntax_on")     | call Decho("did not install beval events: g:syntax_on exists","~".expand("<slnum>"))                | endif
+  au FileType netrw setl beval
+  au WinLeave * if &ft == "netrw" && exists("s:initbeval") | let &beval = s:initbeval | endif
+  au VimEnter * let s:initbeval = &beval
 endif
-au WinEnter *   if &ft == "netrw"|call s:NetrwInsureWinVars()|endif
+
+au WinEnter * if &ft == "netrw" | call s:NetrwInsureWinVars() | endif
 
 if g:netrw_keepj =~# "keepj"
   com! -nargs=*  NetrwKeepj      keepj <args>
@@ -611,50 +593,46 @@ endif
 
 " ---------------------------------------------------------------------
 " netrw#BalloonHelp: {{{2
-if v:version >= 700 && has("balloon_eval") && has("syntax") && exists("g:syntax_on") && !exists("g:netrw_nobeval")
-  " call Decho("loading netrw#BalloonHelp()",'~'.expand("<slnum>"))
-  fun! netrw#BalloonHelp()
-    if &ft != "netrw"
-      return ""
-    endif
-    if exists("s:popuperr_id") && popup_getpos(s:popuperr_id) != {}
-      " popup error window is still showing
-      " s:pouperr_id and s:popuperr_text are set up in netrw#ErrorMsg()
-      if exists("s:popuperr_text") && s:popuperr_text != "" && v:beval_text != s:popuperr_text
-        " text under mouse hasn't changed; only close window when it changes
-        call popup_close(s:popuperr_id)
-        unlet s:popuperr_text
-      else
-        let s:popuperr_text= v:beval_text
-      endif
-      let mesg= ""
-    elseif !exists("w:netrw_bannercnt") || v:beval_lnum >= w:netrw_bannercnt || (exists("g:netrw_nobeval") && g:netrw_nobeval)
-      let mesg= ""
-    elseif     v:beval_text == "Netrw" || v:beval_text == "Directory" || v:beval_text == "Listing"
-      let mesg = "i: thin-long-wide-tree  gh: quick hide/unhide of dot-files   qf: quick file info  %:open new file"
-    elseif     getline(v:beval_lnum) =~ '^"\s*/'
-      let mesg = "<cr>: edit/enter   o: edit/enter in horiz window   t: edit/enter in new tab   v:edit/enter in vert window"
-    elseif     v:beval_text == "Sorted" || v:beval_text == "by"
-      let mesg = 's: sort by name, time, file size, extension   r: reverse sorting order   mt: mark target'
-    elseif v:beval_text == "Sort"   || v:beval_text == "sequence"
-      let mesg = "S: edit sorting sequence"
-    elseif v:beval_text == "Hiding" || v:beval_text == "Showing"
-      let mesg = "a: hiding-showing-all   ctrl-h: editing hiding list   mh: hide/show by suffix"
-    elseif v:beval_text == "Quick" || v:beval_text == "Help"
-      let mesg = "Help: press <F1>"
-    elseif v:beval_text == "Copy/Move" || v:beval_text == "Tgt"
-      let mesg = "mt: mark target   mc: copy marked file to target   mm: move marked file to target"
-    else
-      let mesg= ""
-    endif
-    return mesg
-  endfun
-  "else " Decho
-  " if v:version < 700            |call Decho("did not load netrw#BalloonHelp(): vim version ".v:version." < 700 -","~".expand("<slnum>"))|endif
-  " if !has("balloon_eval")       |call Decho("did not load netrw#BalloonHelp(): does not have balloon eval","~".expand("<slnum>"))       |endif
-  " if !has("syntax")             |call Decho("did not load netrw#BalloonHelp(): syntax disabled","~".expand("<slnum>"))                  |endif
-  " if !exists("g:syntax_on")     |call Decho("did not load netrw#BalloonHelp(): g:syntax_on n/a","~".expand("<slnum>"))                  |endif
-  " if  exists("g:netrw_nobeval") |call Decho("did not load netrw#BalloonHelp(): g:netrw_nobeval exists","~".expand("<slnum>"))           |endif
+
+if s:has_balloon
+    function! netrw#BalloonHelp()
+        " popup error window is still showing
+        " s:pouperr_id and s:popuperr_text are set up in netrw#ErrorMsg()
+        if exists("s:popuperr_id") && popup_getpos(s:popuperr_id) != {}
+            if exists("s:popuperr_text") && s:popuperr_text != "" && v:beval_text != s:popuperr_text
+                " text under mouse hasn't changed; only close window when it changes
+                call popup_close(s:popuperr_id)
+                unlet s:popuperr_text
+            else
+                let s:popuperr_text= v:beval_text
+            endif
+            return ""
+
+        elseif v:beval_text == "Netrw" || v:beval_text == "Directory" || v:beval_text == "Listing"
+            return "i: thin-long-wide-tree  gh: quick hide/unhide of dot-files   qf: quick file info  %:open new file"
+
+        elseif getline(v:beval_lnum) =~ '^"\s*/'
+            return "<cr>: edit/enter   o: edit/enter in horiz window   t: edit/enter in new tab   v:edit/enter in vert window"
+
+        elseif v:beval_text == "Sorted" || v:beval_text == "by"
+            return 's: sort by name, time, file size, extension   r: reverse sorting order   mt: mark target'
+
+        elseif v:beval_text == "Sort"   || v:beval_text == "sequence"
+            return "S: edit sorting sequence"
+
+        elseif v:beval_text == "Hiding" || v:beval_text == "Showing"
+            return "a: hiding-showing-all   ctrl-h: editing hiding list   mh: hide/show by suffix"
+
+        elseif v:beval_text == "Quick" || v:beval_text == "Help"
+            return "Help: press <F1>"
+
+        elseif v:beval_text == "Copy/Move" || v:beval_text == "Tgt"
+            return "mt: mark target   mc: copy marked file to target   mm: move marked file to target"
+
+        endif
+
+        return ""
+    endfunction
 endif
 
 " ------------------------------------------------------------------------
@@ -1173,52 +1151,6 @@ fun! netrw#Lexplore(count,rightside,...)
     endif
   endif
 
-endfun
-
-" ---------------------------------------------------------------------
-" netrw#Clean: remove netrw {{{2
-" supports :NetrwClean  -- remove netrw from first directory on runtimepath
-"          :NetrwClean! -- remove netrw from all directories on runtimepath
-fun! netrw#Clean(sys)
-  "  call Dfunc("netrw#Clean(sys=".a:sys.")")
-
-  if a:sys
-    let choice= confirm("Remove personal and system copies of netrw?","&Yes\n&No")
-  else
-    let choice= confirm("Remove personal copy of netrw?","&Yes\n&No")
-  endif
-  "  call Decho("choice=".choice,'~'.expand("<slnum>"))
-  let diddel= 0
-  let diddir= ""
-
-  if choice == 1
-    for dir in split(&rtp,',')
-      if filereadable(dir."/plugin/netrwPlugin.vim")
-        "     call Decho("removing netrw-related files from ".dir,'~'.expand("<slnum>"))
-        if s:NetrwDelete(dir."/plugin/netrwPlugin.vim")        |call netrw#ErrorMsg(1,"unable to remove ".dir."/plugin/netrwPlugin.vim",55)        |endif
-        if s:NetrwDelete(dir."/autoload/netrwFileHandlers.vim")|call netrw#ErrorMsg(1,"unable to remove ".dir."/autoload/netrwFileHandlers.vim",55)|endif
-        if s:NetrwDelete(dir."/autoload/netrwSettings.vim")    |call netrw#ErrorMsg(1,"unable to remove ".dir."/autoload/netrwSettings.vim",55)    |endif
-        if s:NetrwDelete(dir."/autoload/netrw.vim")            |call netrw#ErrorMsg(1,"unable to remove ".dir."/autoload/netrw.vim",55)            |endif
-        if s:NetrwDelete(dir."/syntax/netrw.vim")              |call netrw#ErrorMsg(1,"unable to remove ".dir."/syntax/netrw.vim",55)              |endif
-        if s:NetrwDelete(dir."/syntax/netrwlist.vim")          |call netrw#ErrorMsg(1,"unable to remove ".dir."/syntax/netrwlist.vim",55)          |endif
-        let diddir= dir
-        let diddel= diddel + 1
-        if !a:sys|break|endif
-      endif
-    endfor
-  endif
-
-  echohl WarningMsg
-  if diddel == 0
-    echomsg "netrw is either not installed or not removable"
-  elseif diddel == 1
-    echomsg "removed one copy of netrw from <".diddir.">"
-  else
-    echomsg "removed ".diddel." copies of netrw"
-  endif
-  echohl None
-
-  "  call Dret("netrw#Clean")
 endfun
 
 " ---------------------------------------------------------------------
@@ -3830,7 +3762,8 @@ fun! s:NetrwBrowse(islocal,dirname)
   else
     NetrwKeepj call s:SetRexDir(a:islocal,b:netrw_curdir)
   endif
-  if v:version >= 700 && has("balloon_eval") && &beval == 0 && &l:bexpr == "" && !exists("g:netrw_nobeval")
+
+  if s:has_balloon && &beval == 0 && &l:bexpr == ""
     let &l:bexpr= "netrw#BalloonHelp()"
     setl beval
   endif
@@ -4467,16 +4400,16 @@ fun! s:NetrwBookmark(del,...)
     let i = 1
     while i <= a:0
       if islocal
-        if v:version > 704 || (v:version == 704 && has("patch656"))
-          let mbfiles= glob(fnameescape(a:{i}),0,1,1)
-        else
-          let mbfiles= glob(fnameescape(a:{i}),0,1)
-        endif
+        let mbfiles = glob(fnameescape(a:{i}), 0, 1, 1)
       else
-        let mbfiles= [a:{i}]
+        let mbfiles = [a:{i}]
       endif
       for mbfile in mbfiles
-        if a:del|call s:DeleteBookmark(mbfile)|else|call s:MakeBookmark(mbfile)|endif
+        if a:del
+            call s:DeleteBookmark(mbfile)
+        else
+            call s:MakeBookmark(mbfile)
+        endif
       endfor
       let i= i + 1
     endwhile
@@ -5062,9 +4995,13 @@ fun! s:viewer()
   endif
 endfun
 
-fun! netrw#Open(file) abort
-  call netrw#Launch(s:viewer() .. ' ' .. shellescape(a:file, 1))
-endfun
+function! netrw#Open(file) abort
+    if has('nvim')
+        call luaeval('vim.ui.open(_A[1]) and nil', [a:file])
+    else
+        call netrw#Launch(s:viewer() .. ' ' .. shellescape(a:file, 1))
+    endif
+endfunction
 
 if !exists('g:netrw_regex_url')
   let g:netrw_regex_url = '\%(\%(http\|ftp\|irc\)s\?\|file\)://\S\{-}'
@@ -5299,31 +5236,6 @@ fun! s:NetrwChgPerm(islocal,curdir)
 endfun
 
 " ---------------------------------------------------------------------
-" s:CheckIfKde: checks if kdeinit is running {{{2
-"    Returns 0: kdeinit not running
-"            1: kdeinit is  running
-fun! s:CheckIfKde()
-  "  call Dfunc("s:CheckIfKde()")
-  " seems kde systems often have gnome-open due to dependencies, even though
-  " gnome-open's subsidiary display tools are largely absent.  Kde systems
-  " usually have "kdeinit" running, though...  (tnx Mikolaj Machowski)
-  if !exists("s:haskdeinit")
-    if has("unix") && executable("ps") && !has("win32unix")
-      let s:haskdeinit= system("ps -e") =~ '\<kdeinit'
-      if v:shell_error
-        let s:haskdeinit = 0
-      endif
-    else
-      let s:haskdeinit= 0
-    endif
-    "   call Decho("setting s:haskdeinit=".s:haskdeinit,'~'.expand("<slnum>"))
-  endif
-
-  "  call Dret("s:CheckIfKde ".s:haskdeinit)
-  return s:haskdeinit
-endfun
-
-" ---------------------------------------------------------------------
 " s:NetrwClearExplore: clear explore variables (if any) {{{2
 fun! s:NetrwClearExplore()
   "  call Dfunc("s:NetrwClearExplore()")
@@ -5437,11 +5349,7 @@ fun! s:NetrwGlob(direntry,expr,pare)
       " escape [ so it is not detected as wildcard character, see :h wildcard
       let path= substitute(path, '[', '[[]', 'g')
     endif
-    if v:version > 704 || (v:version == 704 && has("patch656"))
-      let filelist= glob(path,0,1,1)
-    else
-      let filelist= glob(path,0,1)
-    endif
+    let filelist = glob(path, 0, 1, 1)
     if a:pare
       let filelist= map(filelist,'substitute(v:val, "^.*/", "", "")')
     endif
@@ -5561,41 +5469,32 @@ endfun
 
 " ---------------------------------------------------------------------
 "  s:NetrwHome: this function determines a "home" for saving bookmarks and history {{{2
-fun! s:NetrwHome()
-  if exists("g:netrw_home")
-    let home= expand(g:netrw_home)
+function! s:NetrwHome()
+  if has('nvim')
+    let home = netrw#private#JoinPath(stdpath('state'), 'netrw')
+  elseif exists("g:netrw_home")
+    let home = expand(g:netrw_home)
   else
-    " go to vim plugin home
-    for home in split(&rtp,',') + ['']
-      if isdirectory(s:NetrwFile(home)) && filewritable(s:NetrwFile(home)) | break | endif
-      let basehome= substitute(home,'[/\\]\.vim$','','')
-      if isdirectory(s:NetrwFile(basehome)) && filewritable(s:NetrwFile(basehome))
-        let home= basehome."/.vim"
-        break
-      endif
-    endfor
-    if home == ""
-      " just pick the first directory
-      let home= substitute(&rtp,',.*$','','')
-    endif
-    if has("win32")
-      let home= substitute(home,'/','\\','g')
-    endif
+    let home = expand("$MYVIMDIR")->substitute("/$", "", "")
   endif
+
   " insure that the home directory exists
   if g:netrw_dirhistmax > 0 && !isdirectory(s:NetrwFile(home))
-    "   call Decho("insure that the home<".home."> directory exists")
     if exists("g:netrw_mkdir")
-      "    call Decho("call system(".g:netrw_mkdir." ".s:ShellEscape(s:NetrwFile(home)).")")
       call system(g:netrw_mkdir." ".s:ShellEscape(s:NetrwFile(home)))
     else
-      "    call Decho("mkdir(".home.")")
       call mkdir(home)
     endif
   endif
-  let g:netrw_home= home
+
+  " Normalize directory if on Windows
+  if has("win32")
+    let home = substitute(home, '/', '\\', 'g')
+  endif
+
+  let g:netrw_home = home
   return home
-endfun
+endfunction
 
 " ---------------------------------------------------------------------
 " s:NetrwLeftmouse: handles the <leftmouse> when in a netrw browsing window {{{2
@@ -6297,11 +6196,7 @@ fun! s:NetrwMarkFiles(islocal,...)
   let i      = 1
   while i <= a:0
     if a:islocal
-      if v:version > 704 || (v:version == 704 && has("patch656"))
-        let mffiles= glob(a:{i},0,1,1)
-      else
-        let mffiles= glob(a:{i},0,1)
-      endif
+      let mffiles= glob(a:{i}, 0, 1, 1)
     else
       let mffiles= [a:{i}]
     endif
@@ -7407,12 +7302,7 @@ fun! s:NetrwMarkFileRegexp(islocal)
     " get the matching list of files using local glob()
     "   call Decho("handle local regexp",'~'.expand("<slnum>"))
     let dirname = escape(b:netrw_curdir,g:netrw_glob_escape)
-    if v:version > 704 || (v:version == 704 && has("patch656"))
-      let filelist= glob(s:ComposePath(dirname,regexp),0,1,1)
-    else
-      let files   = glob(s:ComposePath(dirname,regexp),0,0)
-      let filelist= split(files,"\n")
-    endif
+    let filelist= glob(s:ComposePath(dirname,regexp),0,1,1)
     "   call Decho("files<".string(filelist).">",'~'.expand("<slnum>"))
 
     " mark the list of files
@@ -10632,22 +10522,6 @@ endfun
 " Support Functions: {{{1
 
 " ---------------------------------------------------------------------
-" netrw#Access: intended to provide access to variable values for netrw's test suite {{{2
-"   0: marked file list of current buffer
-"   1: marked file target
-fun! netrw#Access(ilist)
-  if     a:ilist == 0
-    if exists("s:netrwmarkfilelist_".bufnr('%'))
-      return s:netrwmarkfilelist_{bufnr('%')}
-    else
-      return "no-list-buf#".bufnr('%')
-    endif
-  elseif a:ilist == 1
-    return s:netrwmftgt
-  endif
-endfun
-
-" ---------------------------------------------------------------------
 " netrw#Call: allows user-specified mappings to call internal netrw functions {{{2
 fun! netrw#Call(funcname,...)
   return call("s:".a:funcname,a:000)
@@ -11275,7 +11149,8 @@ fun! s:NetrwEnew(...)
       endif
     endif
   endif
-  if v:version >= 700 && has("balloon_eval") && !exists("s:initbeval") && !exists("g:netrw_nobeval") && has("syntax") && exists("g:syntax_on")
+
+  if s:has_balloon
     let &l:bexpr = "netrw#BalloonHelp()"
   endif
 
@@ -11774,8 +11649,8 @@ endfun
 fun! s:Strlen(x)
   "  "" call Dfunc("s:Strlen(x<".a:x."> g:Align_xstrlen=".g:Align_xstrlen.")")
 
-  if v:version >= 703 && exists("*strdisplaywidth")
-    let ret= strdisplaywidth(a:x)
+  if exists("*strdisplaywidth")
+    let ret = strdisplaywidth(a:x)
 
   elseif type(g:Align_xstrlen) == 1
     " allow user to specify a function to compute the string length  (ie. let g:Align_xstrlen="mystrlenfunc")
@@ -11784,13 +11659,13 @@ fun! s:Strlen(x)
   elseif g:Align_xstrlen == 1
     " number of codepoints (Latin a + combining circumflex is two codepoints)
     " (comment from TM, solution from NW)
-    let ret= strlen(substitute(a:x,'.','c','g'))
+    let ret = strlen(substitute(a:x,'.','c','g'))
 
   elseif g:Align_xstrlen == 2
     " number of spacing codepoints (Latin a + combining circumflex is one spacing
     " codepoint; a hard tab is one; wide and narrow CJK are one each; etc.)
     " (comment from TM, solution from TM)
-    let ret=strlen(substitute(a:x, '.\Z', 'x', 'g'))
+    let ret = strlen(substitute(a:x, '.\Z', 'x', 'g'))
 
   elseif g:Align_xstrlen == 3
     " virtual length (counting, for instance, tabs as anything between 1 and
@@ -11800,14 +11675,14 @@ fun! s:Strlen(x)
     let modkeep= &l:mod
     exe "norm! o\<esc>"
     call setline(line("."),a:x)
-    let ret= virtcol("$") - 1
+    let ret = virtcol("$") - 1
     d
     NetrwKeepj norm! k
-    let &l:mod= modkeep
+    let &l:mod = modkeep
 
   else
     " at least give a decent default
-    let ret= strlen(a:x)
+    let ret = strlen(a:x)
   endif
   "  "" call Dret("s:Strlen ".ret)
   return ret
@@ -11939,4 +11814,5 @@ unlet s:keepcpo
 " ===============
 " Modelines: {{{1
 " ===============
-" vim:ts=8 sts=2 sw=2 et fdm=marker
+
+" vim:ts=8 sts=4 sw=4 et fdm=marker
